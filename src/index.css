@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+html,
+body {
+  height: 100%;
+  background-color: #ffffff;
+  overscroll-behavior-y: none; /* block vertical overscroll */
+}
+
+h1 {
+  @apply text-4xl font-bold tracking-tight;
+}
+h2 {
+  @apply text-3xl font-semibold tracking-tight;
+}
+h3 {
+  @apply text-2xl font-semibold text-[#3B82F6];
+}
+h4 {
+  @apply text-xl font-medium;
+}
+h5 {
+  @apply text-lg font-medium;
+}
+h6 {
+  @apply text-base font-medium;
+}
+
+.background-navbar {
+  @apply bg-[#E0F2FE];
+}
+
+.background-main {
+  @apply bg-[#c8e1fd];
+}
+
+.screen {
+  @apply w-full h-[calc(100svh-64px)] overflow-y-auto overflow-x-clip;
+}
+
+.category-card {
+  @apply bg-cover bg-center aspect-[4/5] rounded-2xl flex items-end px-1 justify-center p-4;
+}
+
+.scroll-bounce {
+  -webkit-overflow-scrolling: touch; /* Enables momentum/bounce scrolling */
+}
