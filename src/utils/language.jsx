@@ -22,6 +22,7 @@ export function LanguageProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!lang) return;
     localStorage.setItem("lang", lang);
     async function setLanguageOnServer() {
       const result = await postLanguage(
