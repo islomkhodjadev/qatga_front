@@ -8,7 +8,7 @@ import { getLanguage, postLanguage } from "../api/LanguageProvider";
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState(null);
 
   useEffect(() => {
     async function languageGet() {
