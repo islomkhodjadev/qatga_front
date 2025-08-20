@@ -19,6 +19,7 @@ export function LanguageProvider({ children }) {
         setLang("en");
       }
     }
+    languageGet();
   }, []);
 
   useEffect(() => {
