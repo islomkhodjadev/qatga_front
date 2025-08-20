@@ -12,7 +12,7 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     async function languageGet() {
-      stored = await getLanguage();
+      const stored = await getLanguage();
       if (stored) {
         setLang(stored);
       } else {
