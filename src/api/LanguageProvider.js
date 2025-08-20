@@ -12,7 +12,7 @@ export async function postLanguage(chatId, lang) {
 
 export async function getLanguage() {
   const result = await apiCall("telegram/bot-clients/get-user/", "get");
-  if (result.ok) {
+  if (result?.status === 200 && result.data?.language) {
     return result.data.language;
   }
   return null;
