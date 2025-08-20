@@ -13,7 +13,11 @@ export function LanguageProvider({ children }) {
   useEffect(() => {
     async function languageGet() {
       stored = await getLanguage();
-      if (stored && stored !== lang) setLang(stored);
+      if (stored) {
+        setLang(stored);
+      } else {
+        setLang("en");
+      }
     }
   }, []);
 
@@ -27,7 +31,7 @@ export function LanguageProvider({ children }) {
     }
     setLanguageOnServer();
   }, [lang]);
-
+  if (!lang) return null;
   return (
     <LanguageContext.Provider value={{ lang, setLang }}>
       {children}
