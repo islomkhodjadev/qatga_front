@@ -5,7 +5,6 @@ import { getCategory } from "../api/getCategory";
 import CategoryCard from "../components/category/CategoryCard";
 import { pickLangField } from "../utils/i18nField";
 import { useLang } from "../utils/language";
-
 function CategoryScreen() {
   const { lang, setLang } = useLang();
 

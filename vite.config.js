@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: ["foydabor.uz", "f7a9bbd49b75.ngrok-free.app"],
+    allowedHosts: ["foydabor.uz", "4aa60bbbf73f.ngrok-free.app"],
     host: "0.0.0.0",
     port: 5173,
   },

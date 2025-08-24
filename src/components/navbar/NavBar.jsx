@@ -1,4 +1,5 @@
 import "react";
+import { CgProfile } from "react-icons/cg";
 
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -31,7 +32,12 @@ function NavBar() {
       </div>
       <div className="flex justify-around items-center gap-[1rem]">
         {/* <HiSun color="#3B82F6" size="2.5rem" /> */}
-
+        <CgProfile
+          onClick={() => navigate("/profile")}
+          color="#3B82F6"
+          size="1.5rem"
+          className="cursor-pointer"
+        />
         {location.pathname.startsWith("/category") ? <FilterMenu /> : null}
         <LanguageMenu />
       </div>

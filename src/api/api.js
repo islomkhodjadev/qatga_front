@@ -17,8 +17,19 @@ export async function apiCall(url, method = "GET", body = null) {
 
   try {
     const response = await fetch(url, options);
+    if (!response.ok) {
+      // try to parse the body as JSON
+      let errorMessage = "";
+      try {
+        const data = await response.json();
+        errorMessage = data.message || JSON.stringify(data);
+      } catch {
+        // fallback if body isn’t JSON
+        errorMessage = await response.text();
+      }
 
-    if (!response.ok) throw new Error(`Error ${response.status}`);
+      throw new Error(`Error ${response.status}: ${errorMessage}`);
+    }
     const data = await response.json();
 
     return {
