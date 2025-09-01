@@ -7,8 +7,11 @@ import {
   Phone,
   Verified,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import getStories from "../api/getStories";
+import RecordStoryScreen from "../components/story/PopUpStoryRecord";
+import StoryModal from "../components/story/PopUpStoryScreen";
 import { pickLangField } from "../utils/i18nField";
 import { useLang } from "../utils/language";
 
@@ -112,6 +115,33 @@ export default function PlaceScreen() {
   const { lang } = useLang();
   const location = useLocation();
   const { placeObject: place } = location.state || {};
+  const [groupedStories, setGroupedStories] = useState([]);
+  const [activeStory, setActiveStory] = useState(null);
+  const [openRecorder, setOpenRecorder] = useState(false);
+  const [watchedClients, setWatchedClients] = useState([]);
+
+  useEffect(() => {
+    async function fetchStories() {
+      const data = await getStories(`place=${place.id}`);
+
+      // group stories by bot_client.id
+      const grouped = data.reduce((acc, story) => {
+        const clientId = story.bot_client.id;
+        if (!acc[clientId]) {
+          acc[clientId] = {
+            bot_client: story.bot_client,
+            stories: [],
+          };
+        }
+        acc[clientId].stories.push(story);
+        return acc;
+      }, {});
+
+      setGroupedStories(Object.values(grouped));
+    }
+
+    fetchStories();
+  }, []);
 
   if (!place) {
     return (
@@ -152,7 +182,72 @@ export default function PlaceScreen() {
 
   return (
     <div className="screen max-w-6xl p-4 sm:p-6 ">
+      {activeStory && (
+        <StoryModal
+          stories={activeStory.stories}
+          bot_client={activeStory.bot_client}
+          onClose={() => setActiveStory(null)}
+          onAllFinished={(clientId) =>
+            setWatchedClients((prev) => [...prev, clientId])
+          }
+        />
+      )}
+
       {/* Header */}
+      <div className="flex col gap-2  overflow-y-scroll">
+        <div
+          className="w-[70px] h-[70px] flex items-center justify-center cursor-pointer"
+          onClick={() => setOpenRecorder(true)} // ✅ open modal
+        >
+          <div className="inset-0 rounded-full p-[3px] bg-gradient-to-tr from-green-500 via-blue-500 to-green-500">
+            <div className="w-[60px] h-[60px] rounded-full flex justify-center items-center text-6xl">
+              +
+            </div>
+          </div>
+        </div>
+
+        {/* Modal (fullscreen recorder) */}
+        {openRecorder && (
+          <RecordStoryScreen
+            onClose={() => setOpenRecorder(false)}
+            placeId={place.id}
+          />
+        )}
+        {groupedStories.length > 0
+          ? groupedStories.map((group) => {
+              const isWatched = watchedClients.includes(group.bot_client.id);
+              return (
+                <div
+                  key={group.bot_client.id}
+                  className="relative w-[65px] h-[65px] flex items-center justify-center"
+                  onClick={() => setActiveStory(group)}
+                >
+                  {/* Animated border */}
+                  <div
+                    className={`absolute inset-0 rounded-full 
+          ${
+            isWatched
+              ? "bg-gray-400"
+              : "bg-gradient-to-tr from-green-500 via-blue-500 to-green-500 animate-spin [animation-duration:3s]"
+          }`}
+                  >
+                    <div className="w-full h-full rounded-full bg-transparent"></div>
+                  </div>
+
+                  {/* Profile picture */}
+                  <div
+                    style={{
+                      backgroundImage: `url(${group.bot_client.profile_picture})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                    className="w-[60px] h-[60px] rounded-full z-5"
+                  ></div>
+                </div>
+              );
+            })
+          : null}
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -301,7 +396,7 @@ export default function PlaceScreen() {
             {t("services")}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {place.services.map((s) => {
+            {place.services.map((s, index) => {
               const sName =
                 pickLangField(s, "name", lang, ["uz", "ru", "en"]) || s.name;
               const sDesc =
@@ -314,7 +409,10 @@ export default function PlaceScreen() {
                 s.pricing_type_display
               );
               return (
-                <div
+                <motion.div
+                  initial={{ x: index % 2 ? 80 : -80, opacity: 0 }}
+                  whileInView={{ x: 0, opacity: 1 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
                   key={s.id}
                   className="rounded-2xl ring-1 ring-slate-200 bg-white p-4 shadow-sm"
                 >
@@ -341,7 +439,7 @@ export default function PlaceScreen() {
                     </div>
                     <div className="text-sm text-slate-500">{sType}</div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>

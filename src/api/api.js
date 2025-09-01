@@ -1,18 +1,27 @@
 import { Domain } from "./globalDomain";
 
 import { retrieveRawInitData } from "@telegram-apps/sdk-react";
-export async function apiCall(url, method = "GET", body = null) {
+export async function apiCall(
+  url,
+  method = "GET",
+  body = null,
+  content_type = null
+) {
   const initRawData = retrieveRawInitData();
   url = `${Domain}/${url}`;
   const options = {
     method,
     headers: {
       Authorization: `tma ${initRawData}`,
-      "Content-Type": "application/json",
+      "Content-Type": content_type === null ? "application/json" : content_type,
     },
   };
-  if (body) {
-    options.body = JSON.stringify(body);
+  // ✅ Only change: handle FormData specially
+  if (body instanceof FormData) {
+    delete options.headers["Content-Type"]; // let browser add boundary
+    options.body = body; // DO NOT stringify
+  } else if (body) {
+    options.body = JSON.stringify(body); // existing behavior for JSON stays
   }
 
   try {
