@@ -4,9 +4,8 @@ export default async function verifyUser(phone_number) {
   const result = await apiCall("telegram/bot-clients/verify-user/", "post", {
     phone_number: phone_number,
   });
-
   if (result.success) {
-    return true;
+    return { verify: true, botClient: result.data };
   }
-  return false;
+  return { verify: false, botClient: null };
 }

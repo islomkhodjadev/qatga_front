@@ -2,6 +2,7 @@ import { requestContact } from "@telegram-apps/sdk-react";
 import { useEffect, useState } from "react";
 import getUserModel from "../api/getUserModel";
 import verifyUser from "../api/verifyUser";
+import { useBotClient } from "../utils/BotClientContext";
 import { useLang } from "../utils/language";
 
 // Translation map for labels
@@ -30,6 +31,8 @@ const PROFILE_I18N = {
 };
 
 export default function ProfileScreen() {
+  const { setBotClient } = useBotClient();
+
   const [user, setUser] = useState(null);
   const { lang } = useLang();
   const [verified, setVerified] = useState(false);
@@ -37,8 +40,15 @@ export default function ProfileScreen() {
   async function verifyUserOnClick() {
     const result = await requestContact();
     if (result?.contact?.phone_number) {
-      const verify = await verifyUser(result.contact.phone_number);
-      setVerified(verify);
+      const { verify, botClient } = await verifyUser(
+        result.contact.phone_number
+      );
+      setVerified(verify, botClient);
+      console.log(verify, botClient);
+      if (verify) {
+        console.log(botClient);
+        setBotClient(botClient);
+      }
     }
   }
 
