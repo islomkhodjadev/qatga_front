@@ -1,10 +1,10 @@
+import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { FaForward, FaPause } from "react-icons/fa";
 import { FcLike, FcLikePlaceholder } from "react-icons/fc";
 import { IoClose, IoVolumeHigh, IoVolumeMute } from "react-icons/io5";
 import { PiShareFatFill } from "react-icons/pi";
-
 export default function StoryModal({
   stories,
   bot_client,
@@ -19,6 +19,15 @@ export default function StoryModal({
   const [overlayIcon, setOverlayIcon] = useState(null);
 
   const videoRef = useRef(null);
+  const imageTimerRef = useRef(null);
+  const imageStartRef = useRef(null);
+
+  const story = stories[currentIndex];
+  const isImage = (() => {
+    const src = story?.story || "";
+    // crude extension check; adjust if you have MIME/type on the object
+    return /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(src);
+  })();
 
   // ✅ Mark as watched immediately when modal opens
   useEffect(() => {
@@ -34,6 +43,8 @@ export default function StoryModal({
 
   // Sync progress bar with video
   useEffect(() => {
+    if (!story || isImage) return; // skip when image
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -58,7 +69,37 @@ export default function StoryModal({
       video.removeEventListener("timeupdate", updateProgress);
       video.removeEventListener("ended", handleEnded);
     };
-  }, [currentIndex, stories.length]);
+  }, [currentIndex, stories.length, isImage, story]);
+
+  // ⏱️ Image: 5s auto-progress + auto-advance
+  useEffect(() => {
+    if (!story || !isImage) return;
+
+    // clear any prior timers
+    if (imageTimerRef.current) clearInterval(imageTimerRef.current);
+
+    const DURATION_MS = 5000;
+    imageStartRef.current = performance.now();
+
+    imageTimerRef.current = setInterval(() => {
+      const elapsed = performance.now() - imageStartRef.current;
+      const pct = Math.min(100, (elapsed / DURATION_MS) * 100);
+      setProgress(pct);
+
+      if (elapsed >= DURATION_MS) {
+        clearInterval(imageTimerRef.current);
+        if (currentIndex < stories.length - 1) {
+          setCurrentIndex((i) => i + 1);
+        } else {
+          handleClose();
+        }
+      }
+    }, 50);
+
+    return () => {
+      if (imageTimerRef.current) clearInterval(imageTimerRef.current);
+    };
+  }, [currentIndex, stories.length, isImage, story]);
 
   // ✅ unified close
   const handleClose = () => {
@@ -71,7 +112,7 @@ export default function StoryModal({
   // Hold left/right
   const handlePress = (side) => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || isImage) return; // ignore press behavior for images
 
     if (side === "left") {
       video.pause();
@@ -84,7 +125,7 @@ export default function StoryModal({
 
   const handleRelease = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || isImage) return; // ignore for images
 
     video.playbackRate = 1.0;
     setOverlayIcon(null);
@@ -104,8 +145,6 @@ export default function StoryModal({
     }
   };
 
-  const story = stories[currentIndex];
-
   return (
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
       <motion.div
@@ -116,42 +155,69 @@ export default function StoryModal({
           if (info.offset.y > 150) handleClose();
         }}
       >
-        {/* Close button */}
+        {/* Header: sound + avatar + close */}
+        <div className="absolute top-5 left-0 w-full px-4 z-50">
+          <div className="flex items-center justify-between bg-black/50 rounded-xl px-3 py-2 backdrop-blur-sm">
+            {/* Left side: mute + user */}
+            <div className="flex items-center gap-3">
+              {/* Hide mute toggle when image */}
+              {!isImage && (
+                <button
+                  onClick={() => setMuted((m) => !m)}
+                  className="text-white text-2xl"
+                >
+                  {muted ? <IoVolumeMute /> : <IoVolumeHigh />}
+                </button>
+              )}
 
-        {/* Sound toggle */}
-        <div className=" flex gap-1 w-full absolute top-5 bg-[#00000075] rounded px-2 justify-between items-center z-50">
-          <div className="flex justify-center items-center gap-1">
+              {/* Avatar */}
+              <img
+                src={bot_client.profile_picture}
+                alt="avatar"
+                className="h-9 w-9 rounded-full border border-white/40 object-cover"
+              />
+
+              {/* Username + time */}
+              <div className="flex flex-col leading-tight">
+                <span className="text-white font-medium">
+                  {bot_client.username}
+                </span>
+                <span className="text-gray-300 text-xs">
+                  {story.created_at
+                    ? format(new Date(story.created_at), "MMM d, yyyy • HH:mm")
+                    : ""}
+                </span>
+              </div>
+            </div>
+
+            {/* Close button */}
             <button
-              onClick={() => setMuted((m) => !m)}
-              className=" text-white text-2xl z-50"
+              onClick={handleClose}
+              className="text-white text-3xl hover:text-red-400 transition"
             >
-              {muted ? <IoVolumeMute /> : <IoVolumeHigh />}
+              <IoClose />
             </button>
-
-            <img
-              src={`${bot_client.profile_picture}`}
-              alt=""
-              className=" h-[30px] rounded-[50%]"
-            />
-            <span className="text-white">{bot_client.username}</span>
           </div>
-          <button
-            onClick={handleClose}
-            className=" relative text-white text-3xl z-50"
-          >
-            <IoClose />
-          </button>
         </div>
 
-        {/* Video */}
-        <video
-          ref={videoRef}
-          src={story.story}
-          className="h-full max-h-screen object-contain"
-          autoPlay
-          muted={muted}
-          playsInline
-        />
+        {/* Media */}
+        {!isImage ? (
+          <video
+            ref={videoRef}
+            src={story.story}
+            className="h-full max-h-screen object-contain"
+            autoPlay
+            muted={muted}
+            playsInline
+          />
+        ) : (
+          <img
+            src={story.story}
+            alt=""
+            className="h-full max-h-screen object-contain select-none"
+            draggable={false}
+          />
+        )}
 
         {/* Left zone */}
         <div
@@ -175,13 +241,13 @@ export default function StoryModal({
           onClick={() => handleTap("right")}
         />
 
-        {/* Overlay icons */}
-        {overlayIcon === "pause" && (
+        {/* Overlay icons (video only) */}
+        {!isImage && overlayIcon === "pause" && (
           <div className="absolute text-white text-6xl opacity-80">
             <FaPause />
           </div>
         )}
-        {overlayIcon === "ff" && (
+        {!isImage && overlayIcon === "ff" && (
           <motion.div
             className="absolute text-white text-6xl opacity-80"
             animate={{ scale: [1, 1.3, 1] }}
@@ -192,8 +258,7 @@ export default function StoryModal({
         )}
 
         {/* Like / Share */}
-
-        <div className="absolute right-0 flex  bottom-10 gap-4 px-2 flex-col items-center text-white z-50">
+        <div className="absolute right-0 flex bottom-10 gap-4 px-2 flex-col items-center text-white z-50">
           {like ? (
             <FcLike
               size={34}
