@@ -44,9 +44,7 @@ export default function ProfileScreen() {
         result.contact.phone_number
       );
       setVerified(verify, botClient);
-      console.log(verify, botClient);
       if (verify) {
-        console.log(botClient);
         setBotClient(botClient);
       }
     }

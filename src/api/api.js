@@ -1,6 +1,6 @@
+import { retrieveRawInitData } from "@telegram-apps/sdk-react";
 import { Domain } from "./globalDomain";
 
-import { retrieveRawInitData } from "@telegram-apps/sdk-react";
 export async function apiCall(
   url,
   method = "GET",
@@ -13,33 +13,68 @@ export async function apiCall(
     method,
     headers: {
       Authorization: `tma ${initRawData}`,
-      "Content-Type": content_type === null ? "application/json" : content_type,
     },
   };
-  // ✅ Only change: handle FormData specially
+
+  // Set Content-Type header only if not FormData
+  if (!(body instanceof FormData)) {
+    options.headers["Content-Type"] =
+      content_type === null ? "application/json" : content_type;
+  }
+
+  // Handle body
   if (body instanceof FormData) {
-    delete options.headers["Content-Type"]; // let browser add boundary
-    options.body = body; // DO NOT stringify
+    options.body = body; // Browser will set correct Content-Type with boundary
   } else if (body) {
-    options.body = JSON.stringify(body); // existing behavior for JSON stays
+    options.body = JSON.stringify(body);
   }
 
   try {
     const response = await fetch(url, options);
+
+    // Handle 204 No Content and other empty responses
+    if (response.status === 204 || response.status === 205) {
+      return {
+        success: true,
+        status: response.status,
+        data: null,
+        timestamp: Date.now(),
+      };
+    }
+
     if (!response.ok) {
-      // try to parse the body as JSON
-      let errorMessage = "";
+      let errorMessage = `Error ${response.status}: ${response.statusText}`;
+
+      // Try to get more detailed error message from response body
       try {
-        const data = await response.json();
-        errorMessage = data.message || JSON.stringify(data);
-      } catch {
-        // fallback if body isn’t JSON
-        errorMessage = await response.text();
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          errorMessage =
+            errorData.message || errorData.error || JSON.stringify(errorData);
+        } else {
+          errorMessage = await response.text();
+        }
+      } catch (parseError) {
+        // If we can't parse the error response, use the status text
+        console.warn("Could not parse error response:", parseError);
       }
 
-      throw new Error(`Error ${response.status}: ${errorMessage}`);
+      throw new Error(errorMessage);
     }
-    const data = await response.json();
+
+    // Parse successful response
+    const contentType = response.headers.get("content-type");
+    let data = null;
+
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else if (contentType && contentType.includes("text/")) {
+      data = await response.text();
+    } else {
+      // For other content types, return as blob or empty
+      data = await response.blob();
+    }
 
     return {
       success: true,
