@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import getStories from "../api/getStories";
+import OrderingInterface from "../components/ordering/OrderingInterface";
 import PlaceAmenities from "../components/place/PlaceAmenities";
 import PlaceFacts from "../components/place/PlaceFacts";
 import PlaceGallery from "../components/place/PlaceGallery";
@@ -8,7 +9,7 @@ import PlaceHeader from "../components/place/PlaceHeader";
 import PlaceServices from "../components/place/PlaceServices";
 import PlaceStories from "../components/place/PlaceStories";
 import { useLang } from "../utils/language";
-
+import { t } from "../utils/translation";
 export default function PlaceScreen() {
   const { lang } = useLang();
   const location = useLocation();
@@ -17,6 +18,7 @@ export default function PlaceScreen() {
   const [activeStory, setActiveStory] = useState(null);
   const [openRecorder, setOpenRecorder] = useState(false);
   const [watchedClients, setWatchedClients] = useState([]);
+  const [activeTab, setActiveTab] = useState("info");
 
   useEffect(() => {
     async function fetchStories() {
@@ -152,17 +154,44 @@ export default function PlaceScreen() {
         onDeleteStory={handleDeleteStory}
         setGroupedStories={setGroupedStories}
       />
-      {/* Header */}
-      <PlaceHeader place={place} lang={lang} />
-      {/* Media + Facts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <PlaceGallery images={place.images} name={name} lang={lang} />
-        <PlaceFacts place={place} lang={lang} />
-      </div>
-      {/* Services */}
-      <PlaceServices services={place.services} lang={lang} />
-      {/* Amenities */}
-      <PlaceAmenities amenities={place.amenities} lang={lang} />
+      <button
+        onClick={() => setActiveTab("info")}
+        className={`py-2 px-1 border-b-2 font-medium text-sm ${
+          activeTab === "info"
+            ? "border-blue-500 text-blue-600"
+            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+        }`}
+      >
+        {t(lang, "info")}
+      </button>
+      <button
+        onClick={() => setActiveTab("booking")}
+        className={`py-2 px-1 border-b-2 font-medium text-sm ${
+          activeTab === "booking"
+            ? "border-blue-500 text-blue-600"
+            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+        }`}
+      >
+        {t(lang, "Book Rooms")}
+      </button>
+
+      {activeTab === "info" ? (
+        <>
+          {/* Header */}
+          <PlaceHeader place={place} lang={lang} />
+          {/* Media + Facts */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <PlaceGallery images={place.images} name={name} lang={lang} />
+            <PlaceFacts place={place} lang={lang} />
+          </div>
+          {/* Services */}
+          <PlaceServices services={place.services} lang={lang} />
+          {/* Amenities */}
+          <PlaceAmenities amenities={place.amenities} lang={lang} />
+        </>
+      ) : (
+        <OrderingInterface place={place} />
+      )}
     </div>
   );
 }
