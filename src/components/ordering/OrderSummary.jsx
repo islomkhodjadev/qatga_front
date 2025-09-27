@@ -44,10 +44,11 @@ export default function OrderSummary({
 
   const getTotalAmount = () => {
     return orders.reduce((total, order) => {
+      console.log(order);
       const hours =
         (new Date(order.time_end) - new Date(order.time_start)) /
         (1000 * 60 * 60);
-      const rate = order.type === "VIP" ? 50000 : 25000; // Example rates
+      const rate = order.room.price; // Example rates
       return total + hours * rate;
     }, 0);
   };
