@@ -44,7 +44,6 @@ export default function OrderSummary({
 
   const getTotalAmount = () => {
     return orders.reduce((total, order) => {
-      console.log(order);
       const hours =
         (new Date(order.time_end) - new Date(order.time_start)) /
         (1000 * 60 * 60);
